@@ -1,27 +1,47 @@
-"""Hardware integration tests for GrblStage.
+"""
+Identifies the GRBL board by USB VID/PID + serial number,
+Override the detected port manually with:
+    GRBL_PORT=/dev/tty.usbmodemXXXX uv run pytest test -v
 
-Requires a GRBL-flashed Arduino. Set GRBL_PORT env var to override default port.
 Run: uv run pytest test -v
 """
 
 import os
 import time
+
 import pytest
 import serial
+import serial.tools.list_ports
 
 from step2.stage import GrblStage
 
-
-PORT = os.environ.get("GRBL_PORT", "/dev/tty.usbmodem11101")
+# Bench Arduino Uno running GRBL. Update if the board changes.
+GRBL_VID = 0x2341
+GRBL_PID = 0x0001
+GRBL_SERIAL = "9563231343435130D011"
 BAUD = 115200
 
 
-@pytest.fixture(scope="session")
+def find_grbl_port() -> str | None:
+    """Return the device path of the bench GRBL board, or None if absent."""
+    for p in serial.tools.list_ports.comports():
+        if (p.vid, p.pid) == (GRBL_VID, GRBL_PID) and p.serial_number == GRBL_SERIAL:
+            return p.device
+    return None
+
+
+@pytest.fixture(scope="module")
 def stage():
+    port = os.environ.get("GRBL_PORT") or find_grbl_port()
+    if port is None:
+        pytest.skip(
+            f"GRBL board not found "
+            f"(VID 0x{GRBL_VID:04X} PID 0x{GRBL_PID:04X} SN {GRBL_SERIAL})"
+        )
     try:
-        ser = serial.Serial(PORT, BAUD, timeout=1)
+        ser = serial.Serial(port, BAUD, timeout=1)
     except (serial.SerialException, FileNotFoundError):
-        pytest.skip(f"No GRBL device at {PORT}")
+        pytest.skip(f"Found GRBL at {port} but couldn't open it")
 
     with ser:
         s = GrblStage(
