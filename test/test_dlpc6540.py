@@ -86,6 +86,7 @@ class TestDecodeMode:
             decode_mode(b"")
 
 
+@pytest.mark.dlpc6540
 class TestHardware:
     def test_controller_info_returns_valid_data(self, dlpc):
         data = dlpc.send_read_command(DEST_SYSTEM, OP_CONTROLLER_INFO, 13)
