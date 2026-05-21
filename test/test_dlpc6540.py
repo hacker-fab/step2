@@ -10,16 +10,17 @@ Override discovery via env vars:
 from __future__ import annotations
 
 import os
+import time
 
 import pytest
 
 from step2.dlpc6540 import (
     DEST_COMMON,
     DEST_SYSTEM,
+    DLPC,
     OP_CONTROLLER_INFO,
     OP_MODE,
     TI_VID,
-    DLPC,
     decode_controller_info,
     decode_mode,
     find_devices,
@@ -106,3 +107,34 @@ class TestHardware:
         first = dlpc.send_read_command(DEST_SYSTEM, OP_CONTROLLER_INFO, 13)
         second = dlpc.send_read_command(DEST_SYSTEM, OP_CONTROLLER_INFO, 13)
         assert first == second
+
+    def test_fetch_led_current(self, dlpc):
+        """Fetch LED current levels and verify they are within valid range."""
+        red, green, blue = dlpc.get_led_current()
+        assert 0 <= red <= 32
+        assert 0 <= green <= 32
+        assert 0 <= blue <= 32
+
+    def test_get_illumination_enable(self, dlpc):
+        """Fetch illumination enable state and verify it is within valid range."""
+        enable = dlpc.get_illumination_enable()
+        print(bin(enable))
+        assert 0 <= enable <= 7
+
+    def test_cycle_leds_illumination(self, dlpc):
+        """Cycle through r/g/b leds"""
+        for en in range(0, 8):
+            dlpc.set_illumination_enable(en)
+            check_en = dlpc.get_illumination_enable()
+            assert check_en == en
+            time.sleep(0.1)
+
+    def test_slowly_ramp_leds(self, dlpc):
+        """Slowly ramp up/down LED current levels."""
+        for drv_lev in range(150, 800):
+            dlpc.set_led_drive_level(drv_lev, drv_lev, drv_lev)
+            red, green, blue = dlpc.get_led_drive_level()
+            print(red, green, blue)
+            assert red == drv_lev
+            assert green == drv_lev
+            assert blue == drv_lev
