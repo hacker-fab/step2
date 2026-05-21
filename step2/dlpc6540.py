@@ -1,13 +1,9 @@
 from __future__ import annotations
 
-import argparse
 import sys
 
-try:
-    import usb.core
-    import usb.util
-except ImportError:
-    sys.exit("pip install pyusb")
+import usb.core
+import usb.util
 
 TI_VID = 0x0451  # Texas Instruments
 

@@ -1,8 +1,7 @@
 """
 Tests for step2.dlpc6540.
 
-Decoder tests run anywhere. Hardware tests skip if no DLPC6540 is on
-the USB bus.
+Hardware tests skip if no DLPC6540 is on the USB bus.
 
 Override discovery via env vars:
     DLPC_VID=0x0451 DLPC_PID=0x6128 DLPC_TIMEOUT_MS=2000 pytest
@@ -27,9 +26,6 @@ from step2.dlpc6540 import (
 )
 
 
-# --- Hardware fixture ----------------------------------------------------
-
-
 @pytest.fixture(scope="session")
 def dlpc():
     """Open the connected DLPC6540 once for the whole test session."""
@@ -46,9 +42,6 @@ def dlpc():
 
     with DLPC(devices[0], timeout_ms=timeout) as d:
         yield d
-
-
-# --- Pure decoder tests (no hardware) ------------------------------------
 
 
 class TestDecodeControllerInfo:
@@ -93,9 +86,6 @@ class TestDecodeMode:
             decode_mode(b"")
 
 
-# --- Hardware round-trip tests -------------------------------------------
-
-
 class TestHardware:
     def test_controller_info_returns_valid_data(self, dlpc):
         data = dlpc.send_read_command(DEST_SYSTEM, OP_CONTROLLER_INFO, 13)
@@ -108,7 +98,7 @@ class TestHardware:
     def test_mode_query_succeeds(self, dlpc):
         data = dlpc.send_read_command(DEST_COMMON, OP_MODE, 1)
         assert len(data) == 1
-        decode_mode(data)  # raises on bad data; that's the assertion
+        decode_mode(data)  # raises on bad data
 
     def test_repeated_query_is_stable(self, dlpc):
         """Same query twice should yield identical bytes — checks bus state."""
